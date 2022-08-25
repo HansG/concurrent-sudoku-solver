@@ -8,7 +8,22 @@ import fs2.concurrent.Topic
 
 object FS2StreamSolver extends Solver[IO] {
   override def solve(givens: List[Value.Given]): IO[List[Value]] =
-    valuesStream(givens).compile.toList
+   // valuesStream(givens).compile.toList
+    valuesStreamx(givens)
+
+  def valuesStreamx(givens: List[Value.Given]): IO[List[Value]] = {
+    val givenCoords = givens.map(_.coord).toSet
+    val missingCoords = Coord.allCoords.filterNot(givenCoords.contains)
+    Topic[IO, Value] flatMap{ updatesTopic   =>
+      val missingValueStreamsResource = missingCoords.traverse(missingValueStreamResource(updatesTopic))
+      missingValueStreamsResource.use{ missingValueStreams =>
+        val  missingValuesStream = missingValueStreams.reduce(_ merge _)
+        val  valuesStream = Stream.emits(givens) ++ missingValuesStream
+        val publishedValuesStream = valuesStream.evalTap(updatesTopic.publish1)
+        publishedValuesStream.compile.toList
+      }
+    }
+  }
 
   def valuesStream(givens: List[Value.Given]): Stream[IO, Value] =
     for {
