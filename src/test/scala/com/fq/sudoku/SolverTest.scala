@@ -371,20 +371,28 @@ class SolverTest extends CatsEffectSuite {
       CatsEffectQueueSolver,
       FS2StreamSolver
     )
-
+/*
   solvers.foreach { solver =>
     testCases.zipWithIndex
       .foreach {
         case (expected, idx) =>
-          test(s"${solver.getClass.getSimpleName.dropRight(1)} should solve sudoku puzzle #$idx") {
-            val givens: List[Value.Given] = expected.collect {
-              case (k, SudokuValue.Given(v)) => Value.Given(k, v)
-            }.toList
-
-            val result: IO[List[Solver.Value]] = solver.solve(givens)
-            assertIO(result.map(_.map(toSudokuValue).toMap), expected)
-          }
+          testidx(solver, expected, idx)
       }
+  }
+  */
+    testidx(FS2StreamSolver, testCase1, 1)
+
+    def toGiven(expected: Map[Coord, SudokuValue]) = expected.collect {
+      case (k, SudokuValue.Given(v)) => Value.Given(k, v)
+    }.toList
+
+  def testidx(solver: Solver[IO], expected: Map[Coord, SudokuValue], idx: Int) = {
+    test(s"${solver.getClass.getSimpleName.dropRight(1)} should solve sudoku puzzle #$idx") {
+      val givens: List[Value.Given] = toGiven(expected)
+
+      val result: IO[List[Solver.Value]] = solver.solve(givens)
+      assertIO(result.map(_.map(toSudokuValue).toMap), expected)
+    }
   }
 
 }
