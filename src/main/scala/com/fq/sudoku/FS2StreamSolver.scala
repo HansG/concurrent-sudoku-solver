@@ -14,9 +14,9 @@ object FS2StreamSolver extends Solver[IO] {
   def valuesStreamx(givens: List[Value.Given]): IO[List[Value]] = {
     val givenCoords = givens.map(_.coord).toSet
     val missingCoords = Coord.allCoords.filterNot(givenCoords.contains)
-    Topic[IO, Value] flatMap{ updatesTopic   =>
+    Topic[IO, Value] flatMap { updatesTopic   =>
       val missingValueStreamsResource = missingCoords.traverse(missingValueStreamResource(updatesTopic))
-      missingValueStreamsResource.use{ missingValueStreams =>
+      missingValueStreamsResource.use { missingValueStreams =>
         val  missingValuesStream = missingValueStreams.reduce(_ merge _)
         val  valuesStream = Stream.emits(givens) ++ missingValuesStream
         val publishedValuesStream = valuesStream.evalTap(updatesTopic.publish1)
@@ -24,6 +24,7 @@ object FS2StreamSolver extends Solver[IO] {
       }
     }
   }
+
 
   def valuesStream(givens: List[Value.Given]): Stream[IO, Value] =
     for {
